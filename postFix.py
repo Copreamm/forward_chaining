@@ -115,9 +115,15 @@ class PostfixEvaluator:
         return self.eval_postfix(postfix)
 
 # Contoh penggunaan:
-if __name__ == "__main__":
+start = "ya"
+while start == "ya":
     evaluator = PostfixEvaluator()
-    infix_expr = "3+4*2/(1-5)^2"
+    infix_expr = input(str("Masukkan ekspresi infix : "))
     print("Infix =", infix_expr)
     result = evaluator.eval_infix(infix_expr)
     print("Hasil evaluasi =", result)
+
+    start = input("Apakah kamu ingin tetap melanjutkannya? [Ketik ya / tidak] : ").lower()
+    
+if start == "tidak":
+    print("Terima Kasih")
