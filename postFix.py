@@ -17,19 +17,20 @@ class LinkedStack:
 
     def pop(self):
         if self.empty():
-            print("Tumpukan sudah kosong. Tidak bisa diambil lagi")
-            return ''
+            raise Exception("Tumpukan sudah kosong. Tidak bisa diambil lagi")
         data = self.top.data
         self.top = self.top.next
         return data
+    
+    def peek(self):
+        if self.empty():
+            return None
+        return self.top.data
 
 class PostfixEvaluator:
-    MAXSIZE = 100
-
     def __init__(self):
-        self.stack_operand = [0] * self.MAXSIZE
-        self.top = -1
-        self.stack = LinkedStack()
+        self.stack_operand = []
+        self.stack_operator = LinkedStack()
 
     def _priority(self, symbol):
         if symbol == '(': return 1
@@ -38,21 +39,6 @@ class PostfixEvaluator:
         if symbol in ('*', '/', '%'): return 4
         if symbol == '^': return 5
         return 0
-
-    def _push_operand(self, val):
-        if self.top == self.MAXSIZE - 1:
-            print("Overflow")
-            exit(1)
-        self.top += 1
-        self.stack_operand[self.top] = val
-
-    def _pop_operand(self):
-        if self.top == -1:
-            print("Stack kosong")
-            exit(1)
-        val = self.stack_operand[self.top]
-        self.top -= 1
-        return val
 
     def _calculate(self, oper, op1, op2):
         if oper == '^':
@@ -69,50 +55,76 @@ class PostfixEvaluator:
             return op1 - op2
 
     def get_result(self, infix_str):
-        while not self.stack.empty():
-            self.stack.pop()
-
-        postfix_str = ''
+        self.stack_operator = LinkedStack()
+        postfix = ""
+        self.stack_operator.push('(')
         infix_str += ')'
-        self.stack.push('(')
 
-        for symbol in infix_str:
+        i = 0
+        while i < len(infix_str):
+            symbol = infix_str[i]
+
+            if symbol == ' ':
+                i += 1
+                continue
+
+            if symbol.isdigit():
+                angka = ''
+                while i < len(infix_str) and infix_str[i].isdigit():
+                    angka += infix_str[i]
+                    i += 1
+                postfix += angka + ' '
+                continue
+
             priority = self._priority(symbol)
-            if priority == 1:  # '('
-                self.stack.push(symbol)
-            elif priority == 2:  # ')'
-                char = self.stack.pop()
-                while char != '(':
-                    postfix_str += char
-                    char = self.stack.pop()
-            elif priority in [3, 4, 5]:
-                char = self.stack.pop()
-                while self._priority(char) >= priority:
-                    postfix_str += char
-                    char = self.stack.pop()
-                self.stack.push(char)
-                self.stack.push(symbol)
-            else:
-                postfix_str += symbol
 
-        return postfix_str
+            if priority == 1:  # '('
+                self.stack_operator.push(symbol)
+            elif priority == 2:  # ')'
+                while True:
+                    char = self.stack_operator.pop()
+                    if char == '(':
+                        break
+                    postfix += char + ' '
+            elif priority in [3, 4, 5]:
+                while True:
+                    top = self.stack_operator.peek()
+                    if top is None or self._priority(top) < priority:
+                        break
+                    postfix += self.stack_operator.pop() + ' '
+                self.stack_operator.push(symbol)
+            else:
+                postfix += symbol + ' '
+
+            i += 1
+
+        return postfix.strip()
+
 
     def eval_postfix(self, postfix_str):
-        print("Postfix =", postfix_str)
-        for char in postfix_str:
-            if char.isdigit():
-                self._push_operand(int(char))
-            else:
-                op2 = self._pop_operand()
-                op1 = self._pop_operand()
-                result = self._calculate(char, op1, op2)
-                self._push_operand(result)
+        stack = []
+        tokens = postfix_str.split()
 
-        return self._pop_operand()
+        for token in tokens:
+            if token.isdigit():
+                stack.append(int(token))
+            else:
+                if len(stack) < 2:
+                    raise Exception("Ekspresi postfix tidak valid. Kurang operand.")
+                op2 = stack.pop()
+                op1 = stack.pop()
+                result = self._calculate(token, op1, op2)
+                stack.append(result)
+            
+        if len(stack) != 1:
+            raise Exception("Ekspresi postfix tidak valid. Terlalu banyak operand.")
+        return stack.pop()
 
     def eval_infix(self, infix_str):
         postfix = self.get_result(infix_str)
-        return self.eval_postfix(postfix)
+        print("Postfix =", postfix)
+        result = self.eval_postfix(postfix)
+        return result
 
 # Contoh penggunaan:
 start = "ya"
@@ -127,3 +139,5 @@ while start == "ya":
     
 if start == "tidak":
     print("Terima Kasih")
+else:
+    print("Input tidak valid, program dihentikan.")
