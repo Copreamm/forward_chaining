@@ -1,3 +1,1 @@
-# tugas-bareng
-
-Penugasan 3 dan 6
+# Forward Chaining - Kelompok 7
